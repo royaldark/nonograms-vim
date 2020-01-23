@@ -15,8 +15,8 @@
             <div v-for="(cell, idx) in grid"
                  :key="idx"
                  class="cell"
-                 :class="{filled: cell >= 0}"
-                 @click="toggleCell(idx)">
+                 :class="{filled: cell >= 0, selected: selectedCell === idx}"
+                 @click="clickCell(idx)">
                 <div class="cell-inner">
                     <span>&nbsp;</span>
                 </div>
@@ -44,37 +44,88 @@
         props: {
             clues: Object
         },
+        data() {
+            return {
+                selectedCell: -1,
+                cellSize: 50,
+                height: this.clues.horizontal.length,
+                width: this.clues.vertical.length,
+                grid: flatGrid(this.clues),
+                visualMode: false
+            };
+        },
+        created() {
+            window.addEventListener('keydown', this.handleKey);
+        },
+        destroyed() {
+            window.removeEventListener('keydown', this.handleKey);
+        },
         computed: {
             paletteStyle() {
                 return {
                     height: `${0.75 * this.cellSize}px`,
-                    width: `${this.cellSize * this.clues.horizontal.length}px`,
+                    width: `${this.cellSize * this.clues.vertical.length}px`,
                     'grid-template-columns': `repeat(${this.clues.palette.length}, 1fr)`,
                 }
             },
             gridStyle() {
                 return {
-                    height: `${this.cellSize * this.clues.vertical.length}px`,
-                    width: `${this.cellSize * this.clues.horizontal.length}px`,
+                    height: `${this.cellSize * this.clues.horizontal.length}px`,
+                    width: `${this.cellSize * this.clues.vertical.length}px`,
                     'grid-template-rows': `repeat(${this.clues.horizontal.length}, 1fr)`,
                     'grid-template-columns': `repeat(${this.clues.vertical.length}, 1fr)`,
                 }
             }
         },
-        data() {
-            return {
-                cellSize: 50,
-                grid: flatGrid(this.clues)
-            };
-        },
         methods: {
+            selectCell(idx) {
+                this.selectedCell = idx;
+            },
+            clickCell(idx) {
+                this.toggleCell(idx);
+                this.selectCell(idx);
+            },
             toggleCell(idx) {
-                const cur = this.grid[idx];
-
-                if (cur === 0) {
-                    this.grid.splice(idx, 1, 1);
+                if (this.isCellShaded(idx)) {
+                    this.clearCell(idx);
                 } else {
-                    this.grid.splice(idx, 1, 0);
+                    this.shadeCell(idx);
+                }
+            },
+            isCellShaded(idx) {
+                return this.grid[idx] > -1;
+            },
+            clearCell(idx) {
+                this.grid.splice(idx, 1, -1);
+            },
+            shadeCell(idx) {
+                this.grid.splice(idx, 1, 0);
+            },
+            handleKey(event) {
+                console.log(event);
+
+                if (event.key === " ") {
+                    this.toggleCell(this.selectedCell);
+                } else if (event.key === "x") {
+                    this.clearCell(this.selectedCell);
+                } else if (event.key === "h") {
+                    if (this.selectedCell % this.width !== 0) {
+                        this.selectedCell -= 1;
+                    }
+                } else if (event.key === "l") {
+                    if (this.selectedCell % this.width !== this.width - 1) {
+                        this.selectedCell += 1;
+                    }
+                } else if (event.key === "j") {
+                    if (this.selectedCell + this.width < this.grid.length) {
+                        this.selectedCell += this.width;
+                    }
+                } else if (event.key === "k") {
+                    if (this.selectedCell - this.width >= 0) {
+                        this.selectedCell -= this.width;
+                    }
+                } else if (event.key === "v") {
+                    this.visualMode = !this.visualMode;
                 }
             }
         }
@@ -113,6 +164,10 @@
 
         &:hover {
             background-color: lightgray;
+        }
+
+        &.selected {
+            background-color: red;
         }
 
         .cell-inner {
