@@ -15,7 +15,7 @@
             <div v-for="(cell, idx) in grid"
                  :key="idx"
                  class="cell"
-                 :class="{filled: cell >= 0, selected: selectedCell === idx}"
+                 :class="{filled: cell >= 0, selected: isCellSelected(idx), bounded: isInVisualModeBoundingBox(idx)}"
                  @click="clickCell(idx)">
                 <div class="cell-inner">
                     <span>&nbsp;</span>
@@ -51,7 +51,8 @@
                 height: this.clues.horizontal.length,
                 width: this.clues.vertical.length,
                 grid: flatGrid(this.clues),
-                visualMode: false
+                visualMode: false,
+                visualModeRootCell: null
             };
         },
         created() {
@@ -97,9 +98,32 @@
             },
             clearCell(idx) {
                 this.grid.splice(idx, 1, -1);
+                this.visualMode = false;
             },
             shadeCell(idx) {
                 this.grid.splice(idx, 1, 0);
+                this.visualMode = false;
+            },
+            isCellSelected(idx) {
+                return this.selectedCell === idx;
+            },
+            isInVisualModeBoundingBox(idx) {
+                if (!this.visualMode) {
+                    return false;
+                }
+
+                const minColumn = Math.min(this.selectedCell, this.visualModeRootCell);
+                const maxColumn = Math.max(this.selectedCell, this.visualModeRootCell);
+                const minM = minColumn % this.width;
+                const maxM = maxColumn % this.width;
+                const idxM = idx % this.width;
+                const minRow = Math.min(minM, maxM);
+                const maxRow = Math.max(minM, maxM);
+
+                console.log(idx, idx >= minColumn && idx <= maxColumn, idx >= minRow && idx <= maxRow);
+
+                return (idx >= minColumn && idx <= maxColumn) &&
+                    (idxM >= minRow && idxM <= maxRow);
             },
             handleKey(event) {
                 console.log(event);
@@ -110,22 +134,26 @@
                     this.clearCell(this.selectedCell);
                 } else if (event.key === "h") {
                     if (this.selectedCell % this.width !== 0) {
-                        this.selectedCell -= 1;
+                        this.selectCell(this.selectedCell - 1);
                     }
                 } else if (event.key === "l") {
                     if (this.selectedCell % this.width !== this.width - 1) {
-                        this.selectedCell += 1;
+                        this.selectCell(this.selectedCell + 1);
                     }
                 } else if (event.key === "j") {
                     if (this.selectedCell + this.width < this.grid.length) {
-                        this.selectedCell += this.width;
+                        this.selectCell(this.selectedCell + this.width);
                     }
                 } else if (event.key === "k") {
                     if (this.selectedCell - this.width >= 0) {
-                        this.selectedCell -= this.width;
+                        this.selectCell(this.selectedCell - this.width);
                     }
                 } else if (event.key === "v") {
                     this.visualMode = !this.visualMode;
+
+                    if (this.visualMode) {
+                        this.visualModeRootCell = this.selectedCell;
+                    }
                 }
             }
         }
@@ -164,6 +192,10 @@
 
         &:hover {
             background-color: lightgray;
+        }
+
+        &.bounded {
+            background-color: limegreen;
         }
 
         &.selected {
