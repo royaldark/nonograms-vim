@@ -16,7 +16,7 @@
         },
         data() {
             return {
-                clues: Game.snowflake
+                clues: Game.big
             };
         }
     }

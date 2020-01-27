@@ -76,6 +76,23 @@
                     'grid-template-rows': `repeat(${this.clues.horizontal.length}, 1fr)`,
                     'grid-template-columns': `repeat(${this.clues.vertical.length}, 1fr)`,
                 }
+            },
+            visualModeBounds() {
+                if (!this.visualMode) {
+                    return null;
+                }
+
+                const [minX, maxX] = _.sortBy([
+                    this.selectedCell % this.width,
+                    this.visualModeRootCell % this.width,
+                ]);
+
+                const [minY, maxY] = _.sortBy([
+                    Math.floor(this.selectedCell / this.width),
+                    Math.floor(this.visualModeRootCell / this.width),
+                ]);
+
+                return { minX, maxX, minY, maxY };
             }
         },
         methods: {
@@ -86,11 +103,38 @@
                 this.toggleCell(idx);
                 this.selectCell(idx);
             },
+            anyVisualModeBoxCellsShaded() {
+                return _.keys(this.grid)
+                    .filter(this.isInVisualModeBoundingBox)
+                    .filter(this.isCellShaded)
+                    .length > 0;
+            },
+            clearVisualModeBox() {
+                _.keys(this.grid)
+                    .filter(this.isInVisualModeBoundingBox)
+                    .forEach(this.shadeCell);
+
+                this.visualMode = false;
+            },
+            shadeVisualModeBox() {
+                _.keys(this.grid)
+                    .filter(this.isInVisualModeBoundingBox)
+                    .forEach(this.clearCell);
+
+            },
             toggleCell(idx) {
-                if (this.isCellShaded(idx)) {
-                    this.clearCell(idx);
+                if (this.visualMode) {
+                    if (this.anyVisualModeBoxCellsShaded()) {
+                        this.shadeVisualModeBox();
+                    } else {
+                        this.clearVisualModeBox();
+                    }
                 } else {
-                    this.shadeCell(idx);
+                    if (this.isCellShaded(idx)) {
+                        this.clearCell(idx);
+                    } else {
+                        this.shadeCell(idx);
+                    }
                 }
             },
             isCellShaded(idx) {
@@ -98,11 +142,9 @@
             },
             clearCell(idx) {
                 this.grid.splice(idx, 1, -1);
-                this.visualMode = false;
             },
             shadeCell(idx) {
                 this.grid.splice(idx, 1, 0);
-                this.visualMode = false;
             },
             isCellSelected(idx) {
                 return this.selectedCell === idx;
@@ -112,26 +154,24 @@
                     return false;
                 }
 
-                const minColumn = Math.min(this.selectedCell, this.visualModeRootCell);
-                const maxColumn = Math.max(this.selectedCell, this.visualModeRootCell);
-                const minM = minColumn % this.width;
-                const maxM = maxColumn % this.width;
-                const idxM = idx % this.width;
-                const minRow = Math.min(minM, maxM);
-                const maxRow = Math.max(minM, maxM);
+                const { minX, maxX, minY, maxY } = this.visualModeBounds;
+                const [idxX, idxY] = [
+                    idx % this.width,
+                    Math.floor(idx / this.width)
+                ];
 
-                console.log(idx, idx >= minColumn && idx <= maxColumn, idx >= minRow && idx <= maxRow);
-
-                return (idx >= minColumn && idx <= maxColumn) &&
-                    (idxM >= minRow && idxM <= maxRow);
+                return (idxX >= minX && idxX <= maxX) &&
+                    (idxY >= minY && idxY <= maxY);
             },
             handleKey(event) {
                 console.log(event);
 
                 if (event.key === " ") {
                     this.toggleCell(this.selectedCell);
+                    this.visualMode = false;
                 } else if (event.key === "x") {
                     this.clearCell(this.selectedCell);
+                    this.visualMode = false;
                 } else if (event.key === "h") {
                     if (this.selectedCell % this.width !== 0) {
                         this.selectCell(this.selectedCell - 1);
