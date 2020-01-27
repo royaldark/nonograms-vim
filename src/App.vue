@@ -1,22 +1,32 @@
 <template>
     <div id="app">
-        <img alt="Vue logo" src="./assets/logo.png">
-        <Grid :clues="clues"></Grid>
+        <label>
+            Pick a game:
+
+            <select v-model="clues">
+                <option v-for="(game, name) in games" :key="name" :value="game">
+                    {{ name }}
+                </option>
+            </select>
+        </label>
+
+        <Nonogram :clues="clues"></Nonogram>
     </div>
 </template>
 
 <script>
-    import Grid from './components/Grid.vue'
-    import * as Game from './lib/game.js'
+    import Nonogram from './components/Nonogram.vue'
+    import * as Games from './lib/game.js'
 
     export default {
         name: 'app',
         components: {
-            Grid,
+            Nonogram,
         },
         data() {
             return {
-                clues: Game.big
+                games: Games,
+                clues: Games.snowflake
             };
         }
     }

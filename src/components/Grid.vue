@@ -1,28 +1,15 @@
 <template>
-    <section>
-        <div>This a grid</div>
-
-        <div class="palette" :style="paletteStyle">
-            <div v-for="(color, idx) in clues.palette"
-                 :key="idx"
-                 class="swatch"
-                 :style="{'background-color': color}">
+    <div class="grid" :style="gridStyle">
+        <div v-for="(cell, idx) in grid"
+             :key="idx"
+             class="cell"
+             :class="{filled: cell >= 0, selected: isCellSelected(idx), bounded: isInVisualModeBoundingBox(idx)}"
+             @click="clickCell(idx)">
+            <div class="cell-inner">
                 <span>&nbsp;</span>
             </div>
         </div>
-
-        <div class="grid" :style="gridStyle">
-            <div v-for="(cell, idx) in grid"
-                 :key="idx"
-                 class="cell"
-                 :class="{filled: cell >= 0, selected: isCellSelected(idx), bounded: isInVisualModeBoundingBox(idx)}"
-                 @click="clickCell(idx)">
-                <div class="cell-inner">
-                    <span>&nbsp;</span>
-                </div>
-            </div>
-        </div>
-    </section>
+    </div>
 </template>
 
 <script>
@@ -41,15 +28,15 @@
     };
 
     export default {
+        components: {
+        },
         props: {
-            clues: Object
+            clues: Object,
+            cellSize: Number
         },
         data() {
             return {
                 selectedCell: -1,
-                cellSize: 50,
-                height: this.clues.horizontal.length,
-                width: this.clues.vertical.length,
                 grid: flatGrid(this.clues),
                 visualMode: false,
                 visualModeRootCell: null
@@ -62,19 +49,18 @@
             window.removeEventListener('keydown', this.handleKey);
         },
         computed: {
-            paletteStyle() {
-                return {
-                    height: `${0.75 * this.cellSize}px`,
-                    width: `${this.cellSize * this.clues.vertical.length}px`,
-                    'grid-template-columns': `repeat(${this.clues.palette.length}, 1fr)`,
-                }
+            height() {
+                return this.clues.horizontal.length;
+            },
+            width() {
+                return this.clues.vertical.length;
             },
             gridStyle() {
                 return {
-                    height: `${this.cellSize * this.clues.horizontal.length}px`,
-                    width: `${this.cellSize * this.clues.vertical.length}px`,
-                    'grid-template-rows': `repeat(${this.clues.horizontal.length}, 1fr)`,
-                    'grid-template-columns': `repeat(${this.clues.vertical.length}, 1fr)`,
+                    height: `${this.cellSize * this.height}px`,
+                    width: `${this.cellSize * this.width}px`,
+                    'grid-template-rows': `repeat(${this.height}, 1fr)`,
+                    'grid-template-columns': `repeat(${this.width}, 1fr)`,
                 }
             },
             visualModeBounds() {
@@ -201,20 +187,6 @@
 </script>
 
 <style scoped lang="scss">
-    .palette {
-        border-radius: 10px;
-        display: grid;
-        grid-gap: 2px;
-        background-color: black;
-        border: 2px solid black;
-        padding: 2px;
-        margin-bottom: 1rem;
-    }
-
-    .swatch {
-        cursor: pointer;
-    }
-
     .grid {
         border-radius: 10px;
         display: grid;
@@ -254,5 +226,4 @@
             }
         }
     }
-
 </style>
